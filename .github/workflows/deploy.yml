@@ -48,9 +48,16 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/blog_deploy
           chmod 600 ~/.ssh/blog_deploy
 
+          # cloudflaredのラッパースクリプトを作成
+          cat > /tmp/cf-proxy.sh << EOF
+          #!/bin/bash
+          cloudflared access ssh --hostname \$1 --id ${CF_ACCESS_CLIENT_ID} --secret ${CF_ACCESS_CLIENT_SECRET}
+          EOF
+          chmod +x /tmp/cf-proxy.sh
+
           cat > ~/.ssh/config << EOF
           Host blog-ssh.t12jp.org
-            ProxyCommand cloudflared access ssh --hostname %h --id ${CF_ACCESS_CLIENT_ID} --secret ${CF_ACCESS_CLIENT_SECRET}
+            ProxyCommand /tmp/cf-proxy.sh %h
             IdentityFile ~/.ssh/blog_deploy
             StrictHostKeyChecking no
             User root
