@@ -42,7 +42,9 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/blog_deploy
+
+          # base64デコードして秘密鍵を復元
+          echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/blog_deploy
           chmod 600 ~/.ssh/blog_deploy
 
           cat > ~/.ssh/config << EOF
