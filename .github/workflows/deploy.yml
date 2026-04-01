@@ -57,6 +57,6 @@ jobs:
 
           # rsync実行
           rsync -avz --delete \
-            -e "ssh -i ~/.ssh/blog_deploy -o ProxyCommand='cloudflared access ssh --hostname blog-ssh.${{ secrets.CF_DOMAIN }}' -o StrictHostKeyChecking=no" \
+            -e "ssh -i ~/.ssh/blog_deploy -o ProxyCommand='cloudflared access ssh --hostname blogssh.${{ secrets.CF_DOMAIN }}' -o StrictHostKeyChecking=no" \
             dist/ \
             root@blog-ssh.${{ secrets.CF_DOMAIN }}:/var/www/blog/
