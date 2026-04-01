@@ -40,31 +40,20 @@ jobs:
       - name: Deploy via rsync over Cloudflare Tunnel
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           mkdir -p ~/.ssh
-
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/blog_deploy
           chmod 600 ~/.ssh/blog_deploy
 
-          cat > /tmp/cf-proxy.sh << SCRIPT
-          #!/bin/bash
-          export CF_ACCESS_CLIENT_ID="${CF_ACCESS_CLIENT_ID}"
-          export CF_ACCESS_CLIENT_SECRET="${CF_ACCESS_CLIENT_SECRET}"
-          cloudflared access ssh --hostname \$1
-          SCRIPT
-          chmod +x /tmp/cf-proxy.sh
-
           cat > ~/.ssh/config << EOF
-          Host blog-ssh.t12jp.org
-            ProxyCommand /tmp/cf-proxy.sh %h
+          Host blog-deploy.t12jp.org
             IdentityFile ~/.ssh/blog_deploy
             StrictHostKeyChecking no
             User root
+            ProxyCommand cloudflared access ssh --hostname %h
           EOF
           chmod 600 ~/.ssh/config
 
           rsync -avz --delete \
             dist/ \
-            root@blog-ssh.t12jp.org:/var/www/blog/
+            root@blog-deploy.t12jp.org:/var/www/blog/
