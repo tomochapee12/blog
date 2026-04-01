@@ -48,11 +48,12 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/blog_deploy
           chmod 600 ~/.ssh/blog_deploy
 
-          # cloudflaredのラッパースクリプトを作成
-          cat > /tmp/cf-proxy.sh << EOF
+          cat > /tmp/cf-proxy.sh << SCRIPT
           #!/bin/bash
-          cloudflared access ssh --hostname \$1 --id ${CF_ACCESS_CLIENT_ID} --secret ${CF_ACCESS_CLIENT_SECRET}
-          EOF
+          export CF_ACCESS_CLIENT_ID="${CF_ACCESS_CLIENT_ID}"
+          export CF_ACCESS_CLIENT_SECRET="${CF_ACCESS_CLIENT_SECRET}"
+          cloudflared access ssh --hostname \$1
+          SCRIPT
           chmod +x /tmp/cf-proxy.sh
 
           cat > ~/.ssh/config << EOF
