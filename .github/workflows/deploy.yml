@@ -40,23 +40,23 @@ jobs:
       - name: Deploy via rsync over Cloudflare Tunnel
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
-          # 秘密鍵を配置
           mkdir -p ~/.ssh
+
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/blog_deploy
           chmod 600 ~/.ssh/blog_deploy
 
-          # SSH設定（cloudflaredをProxyCommandに）
-          cat >> ~/.ssh/config << EOF
-          Host blog-ssh.${{ secrets.CF_DOMAIN }}
-            ProxyCommand cloudflared access ssh --hostname %h
+          cat > ~/.ssh/config << EOF
+          Host blog-ssh.t12jp.org
+            ProxyCommand cloudflared access ssh --hostname %h --id ${CF_ACCESS_CLIENT_ID} --secret ${CF_ACCESS_CLIENT_SECRET}
             IdentityFile ~/.ssh/blog_deploy
             StrictHostKeyChecking no
             User root
           EOF
+          chmod 600 ~/.ssh/config
 
-          # rsync実行
           rsync -avz --delete \
-            -e "ssh -i ~/.ssh/blog_deploy -o ProxyCommand='cloudflared access ssh --hostname blogssh.${{ secrets.CF_DOMAIN }}' -o StrictHostKeyChecking=no" \
             dist/ \
-            root@blog-ssh.${{ secrets.CF_DOMAIN }}:/var/www/blog/
+            root@blog-ssh.t12jp.org:/var/www/blog/
