@@ -32,13 +32,31 @@ jobs:
       - name: Build Astro
         run: pnpm build
 
-      - name: Deploy via rsync
-        uses: burnett01/rsync-deployments@7.0.1
-        with:
-          switches: -avz --delete
-          path: dist/
-          remote_path: /var/www/blog/
-          remote_host: ${{ secrets.SSH_HOST }}
-          remote_port: ${{ secrets.SSH_PORT }}
-          remote_user: ${{ secrets.SSH_USER }}
-          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Install cloudflared
+        run: |
+          curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o cloudflared.deb
+          sudo dpkg -i cloudflared.deb
+
+      - name: Deploy via rsync over Cloudflare Tunnel
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          # 秘密鍵を配置
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/blog_deploy
+          chmod 600 ~/.ssh/blog_deploy
+
+          # SSH設定（cloudflaredをProxyCommandに）
+          cat >> ~/.ssh/config << EOF
+          Host blog-ssh.${{ secrets.CF_DOMAIN }}
+            ProxyCommand cloudflared access ssh --hostname %h
+            IdentityFile ~/.ssh/blog_deploy
+            StrictHostKeyChecking no
+            User root
+          EOF
+
+          # rsync実行
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/blog_deploy -o ProxyCommand='cloudflared access ssh --hostname blog-ssh.${{ secrets.CF_DOMAIN }}' -o StrictHostKeyChecking=no" \
+            dist/ \
+            root@blog-ssh.${{ secrets.CF_DOMAIN }}:/var/www/blog/
